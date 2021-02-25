@@ -21,9 +21,9 @@ function ready(error, us, education) {
     const h = 700;
 
     const colourScale = d3
-        .scaleLinear()
-        .domain([0, 100])
-        .range(['white', 'navy']);
+        .scaleThreshold()
+        .domain([10, 20, 30, 40, 50])
+        .range(['yellow', 'orange', 'red', 'purple', 'black']);
 
     const svg = d3
         .select('#chart')
@@ -55,33 +55,16 @@ function ready(error, us, education) {
         .on('mouseover', function (d) {
             tooltip.style('opacity', 0.9);
             tooltip
-                .html(function () {
-                    var result = education.filter(function (obj) {
-                        return obj.fips === d.id;
-                    });
-                    if (result[0]) {
-                        return (
-                            result[0]['area_name'] +
-                            ', ' +
-                            result[0]['state'] +
-                            ': ' +
-                            result[0].bachelorsOrHigher +
-                            '%'
-                        );
-                    }
-                    // could not find a matching fips id in the data
-                    return 0;
-                })
-                .attr('data-education', function () {
-                    var result = education.filter(function (obj) {
-                        return obj.fips === d.id;
-                    });
-                    if (result[0]) {
-                        return result[0].bachelorsOrHigher;
-                    }
-                    // could not find a matching fips id in the data
-                    return 0;
-                })
+                .html(
+                    () =>
+                        resultCountyMatch(d).area_name +
+                        ', ' +
+                        resultCountyMatch(d).state +
+                        ': ' +
+                        resultCountyMatch(d).bachelorsOrHigher +
+                        '%'
+                )
+                .attr('data-education', resultCountyMatch(d).bachelorsOrHigher)
                 .style('left', d3.event.pageX + 10 + 'px')
                 .style('top', d3.event.pageY - 28 + 'px');
         })
@@ -148,25 +131,25 @@ function ready(error, us, education) {
     //         d3.selectAll('#tooltip').remove();
     //     });
 
-    // const legend = svg.append('g').attr('id', 'legend');
+    const legend = svg.append('g').attr('id', 'legend');
 
-    // legend
-    //     .selectAll('rect')
-    //     .data(cScale.domain())
-    //     .enter()
-    //     .append('rect')
-    //     .attr('x', (d, i) => p + i * 50)
-    //     .attr('y', 5)
-    //     .attr('width', 50)
-    //     .attr('height', 20)
-    //     .style('fill', d => cScale(d - 0.1));
+    legend
+        .selectAll('rect')
+        .data(colourScale.domain())
+        .enter()
+        .append('rect')
+        .attr('x', (d, i) => 200 + i * 50)
+        .attr('y', 5)
+        .attr('width', 50)
+        .attr('height', 20)
+        .style('fill', d => colourScale(d - 0.1));
 
-    // legend
-    //     .selectAll('text')
-    //     .data(cScale.domain())
-    //     .enter()
-    //     .append('text')
-    //     .attr('x', (d, i) => p + 45 + i * 50)
-    //     .attr('y', 40)
-    //     .text(d => d);
+    legend
+        .selectAll('text')
+        .data(colourScale.domain())
+        .enter()
+        .append('text')
+        .attr('x', (d, i) => 240 + i * 50)
+        .attr('y', 40)
+        .text(d => d);
 }
