@@ -1,7 +1,9 @@
+/* global d3, topojson */
+
 const EDUCATION_FILE =
-    'https://raw.githubusercontent.com/no-stack-dub-sack/testable-projects-fcc/master/src/data/choropleth_map/for_user_education.json';
+    'https://cdn.freecodecamp.org/testable-projects-fcc/data/choropleth_map/for_user_education.json';
 const COUNTY_FILE =
-    'https://raw.githubusercontent.com/no-stack-dub-sack/testable-projects-fcc/master/src/data/choropleth_map/counties.json';
+    'https://cdn.freecodecamp.org/testable-projects-fcc/data/choropleth_map/counties.json';
 
 d3.queue()
     .defer(d3.json, COUNTY_FILE)
@@ -15,11 +17,13 @@ function ready(error, us, education) {
     console.log(us);
     console.log(education);
 
-    const w = 700;
-    const h = 500;
-    const p = 50;
+    const w = 1000;
+    const h = 700;
 
-    // // const color = d3.scaleOrdinal(d3.schemeCategory10);
+    const colourScale = d3
+        .scaleLinear()
+        .domain([0, 100])
+        .range(['white', 'navy']);
 
     const svg = d3
         .select('#chart')
@@ -28,16 +32,14 @@ function ready(error, us, education) {
         .attr('width', w)
         .attr('height', h);
 
-    svg.append('g')
-        .attr('class', 'states')
-        .selectAll('path')
-        .data(topojson.feature(us, us.objects.states).features)
-        .enter()
-        .append('path')
-        .attr('class', 'county')
-        .attr('d', d3.geoPath())
-        .style('fill', 'transparent')
-        .style('stroke', 'black');
+    var tooltip = d3
+        .select('#chart')
+        .append('div')
+        .attr('class', 'tooltip')
+        .attr('id', 'tooltip')
+        .style('opacity', 0);
+
+    const resultCountyMatch = d => education.filter(e => e.fips === d.id)[0];
 
     svg.append('g')
         .attr('class', 'counties')
@@ -46,9 +48,46 @@ function ready(error, us, education) {
         .enter()
         .append('path')
         .attr('class', 'county')
+        .attr('data-fips', d => d.id)
+        .attr('data-education', d => resultCountyMatch(d).bachelorsOrHigher)
         .attr('d', d3.geoPath())
-        .style('fill', 'transparent')
-        .style('stroke', 'black');
+        .style('fill', d => colourScale(resultCountyMatch(d).bachelorsOrHigher))
+        .on('mouseover', function (d) {
+            tooltip.style('opacity', 0.9);
+            tooltip
+                .html(function () {
+                    var result = education.filter(function (obj) {
+                        return obj.fips === d.id;
+                    });
+                    if (result[0]) {
+                        return (
+                            result[0]['area_name'] +
+                            ', ' +
+                            result[0]['state'] +
+                            ': ' +
+                            result[0].bachelorsOrHigher +
+                            '%'
+                        );
+                    }
+                    // could not find a matching fips id in the data
+                    return 0;
+                })
+                .attr('data-education', function () {
+                    var result = education.filter(function (obj) {
+                        return obj.fips === d.id;
+                    });
+                    if (result[0]) {
+                        return result[0].bachelorsOrHigher;
+                    }
+                    // could not find a matching fips id in the data
+                    return 0;
+                })
+                .style('left', d3.event.pageX + 10 + 'px')
+                .style('top', d3.event.pageY - 28 + 'px');
+        })
+        .on('mouseout', function () {
+            tooltip.style('opacity', 0);
+        });
 
     // const xScale = d3
     //     .scaleBand()
